@@ -1,4 +1,5 @@
 # Ignore directories
+/*/__pycache__
 /data/
 /results/
 /src/runs/
