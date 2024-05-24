@@ -74,6 +74,7 @@ def train_classification_model(
     plot_figs=True,
     nb_batches_to_display=10,
     early_stopper=None,
+    save_filepath=None
 ):
     """
     Train a classification model.
@@ -89,6 +90,7 @@ def train_classification_model(
         plot_figs (bool): Whether to plot training and validation curves.
         nb_batches_to_display (int): Number of batches to display during training.
         early_stopper (optional): Early stopping mechanism.
+        save_filepath(optional): path to save the model
     Returns:
         tuple: Tuple containing the trained model and training history.
     """
@@ -186,6 +188,8 @@ def train_classification_model(
         axes[1].grid(True, linestyle="--", alpha=0.7)
         plt.tight_layout()
         plt.show()
+    if save_filepath is not None:
+        torch.save(model, save_filepath)
     return model, history
 
 
@@ -205,13 +209,13 @@ def evaluate_model(model, test_loader, device):
     all_predictions = []
     all_targets = []
     with torch.no_grad():
-        for images, targets in test_loader:
+        for images, targets in tqdm(test_loader):
             images = images.to(device)
             targets = targets.to(device)
             outputs = model(images)
             predictions = torch.argmax(outputs, dim=1)
-            all_predictions.extend(predictions.to(device).numpy())
-            all_targets.extend(targets.to(device).numpy())
+            all_predictions.extend(predictions.numpy())
+            all_targets.extend(targets.numpy())
     accuracy = accuracy_score(all_targets, all_predictions)
     print(f'Accuracy on test set: {accuracy:.5f}')
 
@@ -234,7 +238,7 @@ def get_misclassified_samples(model, test_loader, device):
     misclassified_labels = []
     misclassified_predictions = []
     with torch.no_grad():
-        for images, targets in test_loader:
+        for images, targets in tqdm(test_loader):
             images = images.to(device)
             targets = targets.to(device)
             outputs = model(images)
@@ -243,9 +247,9 @@ def get_misclassified_samples(model, test_loader, device):
             misclassified_indices = (
                 predictions != targets).nonzero(as_tuple=True)[0]
             for idx in misclassified_indices:
-                misclassified_images.append(images[idx].to(device))
-                misclassified_labels.append(targets[idx].to(device))
-                misclassified_predictions.append(predictions[idx].to(device))
+                misclassified_images.append(images[idx])
+                misclassified_labels.append(targets[idx])
+                misclassified_predictions.append(predictions[idx])
 
     # Create a DataLoader from the misclassified samples
     misclassified_images_tensor = torch.stack(misclassified_images)
